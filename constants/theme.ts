@@ -22,7 +22,7 @@ export const Colors = {
     border: '#E5E5E5',
   },
   dark: {
-    text: spotifyWhite,
+    text: '#E5E7EB', // Softer white for better readability
     background: spotifyBlack,
     tint: spotifyGreen,
     icon: spotifyGray,

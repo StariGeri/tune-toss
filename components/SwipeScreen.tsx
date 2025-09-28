@@ -19,6 +19,7 @@ import {
   View,
 } from 'react-native';
 
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -323,7 +324,7 @@ export default function SwipeScreen() {
     },
     progressText: {
       fontSize: 16,
-      color: colorScheme === 'dark' ? 'white' : '#1f2937',
+      color: colors.text,
       fontWeight: '600',
       textAlign: 'center',
       marginBottom: 8,
@@ -338,7 +339,7 @@ export default function SwipeScreen() {
     card: {
       width: CARD_WIDTH,
       height: CARD_HEIGHT,
-      backgroundColor: colorScheme === 'dark' ? '#2a3441' : 'white',
+      //backgroundColor: colorScheme === 'dark' ? '#2a3441' : 'white',
       borderRadius: 24,
       padding: 24,
       alignItems: 'center',
@@ -350,8 +351,8 @@ export default function SwipeScreen() {
       elevation: 12,
     },
     albumArt: {
-      width: 200,
-      height: 200,
+      width: 250,
+      height: 250,
       borderRadius: 16,
     },
     albumArtPlaceholder: {
@@ -370,14 +371,14 @@ export default function SwipeScreen() {
     trackName: {
       fontSize: 24,
       fontWeight: '800',
-      color: colorScheme === 'dark' ? 'white' : '#1f2937',
+      color: colors.text,
       textAlign: 'center',
       marginBottom: 8,
       lineHeight: 30,
     },
     artistName: {
       fontSize: 18,
-      color: colorScheme === 'dark' ? '#9ca3af' : '#6b7280',
+      color: colorScheme === 'dark' ? '#D1D5DB' : '#6b7280',
       textAlign: 'center',
       marginBottom: 6,
       fontWeight: '600',
@@ -401,8 +402,9 @@ export default function SwipeScreen() {
     controlsContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'space-between',
       gap: 20,
+      width: '100%',
     },
     playButton: {
       width: 64,
@@ -421,7 +423,6 @@ export default function SwipeScreen() {
       width: 48,
       height: 48,
       borderRadius: 24,
-      backgroundColor: '#ef4444',
       justifyContent: 'center',
       alignItems: 'center',
       shadowColor: '#000',
@@ -429,9 +430,6 @@ export default function SwipeScreen() {
       shadowOpacity: 0.2,
       shadowRadius: 4,
       elevation: 4,
-    },
-    keepButton: {
-      backgroundColor: '#22c55e',
     },
     nextSongContainer: {
       position: 'absolute',
@@ -458,18 +456,18 @@ export default function SwipeScreen() {
       flex: 1,
     },
     nextSongLabel: {
-      color: colorScheme === 'dark' ? '#9ca3af' : '#6b7280',
+      color: colorScheme === 'dark' ? '#D1D5DB' : '#6b7280',
       fontSize: 12,
       fontWeight: '600',
       marginBottom: 4,
     },
     nextSongTitle: {
-      color: colorScheme === 'dark' ? 'white' : '#1f2937',
+      color: colors.text,
       fontSize: 14,
       fontWeight: '600',
     },
     nextSongArtist: {
-      color: colorScheme === 'dark' ? '#9ca3af' : '#6b7280',
+      color: colorScheme === 'dark' ? '#D1D5DB' : '#6b7280',
       fontSize: 12,
     },
     finishedContainer: {
@@ -481,13 +479,13 @@ export default function SwipeScreen() {
     finishedTitle: {
       fontSize: 28,
       fontWeight: 'bold',
-      color: colorScheme === 'dark' ? 'white' : '#1f2937',
+      color: colors.text,
       marginBottom: 16,
       textAlign: 'center',
     },
     finishedSubtitle: {
       fontSize: 18,
-      color: colorScheme === 'dark' ? '#9ca3af' : '#6b7280',
+      color: colorScheme === 'dark' ? '#D1D5DB' : '#6b7280',
       textAlign: 'center',
       marginBottom: 32,
     },
@@ -554,7 +552,7 @@ export default function SwipeScreen() {
       alignItems: 'center',
     },
     dropdownText: {
-      color: colorScheme === 'dark' ? 'white' : '#1f2937',
+      color: colors.text,
       fontSize: 16,
       fontWeight: '500',
     },
@@ -656,7 +654,7 @@ export default function SwipeScreen() {
                   style={styles.actionButton}
                   onPress={() => handleSwipe('left')}
                 >
-                  <IconSymbol name="xmark" size={20} color="white" />
+                  <Ionicons name="heart-dislike-outline" size={24} color="red" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -676,10 +674,10 @@ export default function SwipeScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.actionButton, styles.keepButton]}
+                  style={[styles.actionButton]}
                   onPress={() => handleSwipe('right')}
                 >
-                  <IconSymbol name="heart.fill" size={20} color="white" />
+                  <Ionicons name="heart-outline" size={24} color={colorScheme === 'dark' ? 'white' : 'black'} />
                 </TouchableOpacity>
               </View>
             </Animated.View>
