@@ -109,7 +109,16 @@ A mobile app that allows users to clean and curate their Spotify playlists with 
 
 ## Screenshots
 
-*Screenshots will be added once the app is fully tested*
+### Light Mode
+![Light Mode - Playlists Screen](assets/images/readme/light_1.jpeg)
+![Light Mode - Swipe Screen](assets/images/readme/light_2.jpeg)
+
+### Dark Mode
+![Dark Mode - Playlists Screen](assets/images/readme/dark_1.jpeg)
+![Dark Mode - Swipe Screen](assets/images/readme/dark_2.jpeg)
+![Dark Mode - Additional Screen](assets/images/readme/dark_3.jpeg)
+
+
 
 ## License
 

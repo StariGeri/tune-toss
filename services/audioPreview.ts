@@ -115,7 +115,7 @@ class AudioPreviewService {
       if (result && result.previewUrl) {
         return {
           url: result.previewUrl,
-          duration: result.duration || 30000,
+          duration: 30000, // All previews are typically 30 seconds
           provider: provider,
         };
       }

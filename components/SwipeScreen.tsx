@@ -16,7 +16,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -94,14 +94,15 @@ export default function SwipeScreen() {
       );
       setCurrentPreview(preview);
       
-      // Autoplay the preview if available
+      // Set duration immediately when preview is loaded
       if (preview) {
+        setPlaybackDuration(preview.duration);
+        setPlaybackPosition(0);
+        
         try {
           const success = await audioPreviewService.playPreview(preview.url, preview.duration);
           if (success) {
             setIsPlaying(true);
-            setPlaybackDuration(preview.duration);
-            setPlaybackPosition(0);
           }
         } catch (playError) {
           console.error('Error auto-playing preview:', playError);
@@ -157,6 +158,7 @@ export default function SwipeScreen() {
         const success = await audioPreviewService.playPreview(currentPreview.url, currentPreview.duration);
         if (success) {
           setIsPlaying(true);
+          setPlaybackDuration(currentPreview.duration); // Ensure duration is set
         }
       }
     } catch (error) {
@@ -385,23 +387,18 @@ export default function SwipeScreen() {
       alignItems: 'center',
       paddingHorizontal: 16,
       paddingTop: 20,
-      paddingBottom: 140, // Space for next song section
+      paddingBottom: 100,
     },
     card: {
       width: CARD_WIDTH,
+      // make the card background color the same as the background color depending on the color scheme
+      backgroundColor: colorScheme === 'dark' ? '#1a2332' : '#f8fafc',
       height: CARD_HEIGHT,
-      //backgroundColor: colorScheme === 'dark' ? '#2a3441' : 'white',
-      borderRadius: 24,
       paddingTop: 24,
       paddingHorizontal: 24,
       paddingBottom: 24,
       alignItems: 'center',
-      justifyContent: 'space-between',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: colorScheme === 'dark' ? 0.3 : 0.1,
-      shadowRadius: 16,
-      elevation: 12,
+      justifyContent: 'flex-start',
       position: 'absolute',
     },
     currentCard: {
@@ -411,13 +408,13 @@ export default function SwipeScreen() {
       zIndex: 1,
     },
     albumArt: {
-      width: 250,
-      height: 250,
+      width: CARD_WIDTH * 0.7,
+      height: CARD_WIDTH * 0.7,
       borderRadius: 16,
     },
     albumArtPlaceholder: {
-      width: 200,
-      height: 200,
+      width: CARD_WIDTH * 0.7,
+      height: CARD_WIDTH * 0.7,
       borderRadius: 16,
       backgroundColor: colorScheme === 'dark' ? '#3a4551' : '#e5e7eb',
       justifyContent: 'center',
@@ -427,6 +424,7 @@ export default function SwipeScreen() {
       alignItems: 'center',
       paddingHorizontal: 16,
       marginTop: 20,
+      marginBottom: 20,
     },
     trackName: {
       fontSize: 24,
@@ -445,8 +443,7 @@ export default function SwipeScreen() {
     },
     timelineContainer: {
       width: '100%',
-      marginTop: 20,
-      marginBottom: 20,
+      marginVertical: 20,
     },
     timeline: {
       height: 4,
@@ -465,6 +462,7 @@ export default function SwipeScreen() {
       justifyContent: 'space-between',
       gap: 20,
       width: '100%',
+      marginTop: 'auto',
     },
     playButton: {
       width: 64,
@@ -473,11 +471,6 @@ export default function SwipeScreen() {
       backgroundColor: colorScheme === 'dark' ? 'white' : '#1f2937',
       justifyContent: 'center',
       alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 6,
     },
     actionButton: {
       width: 48,
@@ -485,11 +478,6 @@ export default function SwipeScreen() {
       borderRadius: 24,
       justifyContent: 'center',
       alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 4,
     },
     nextSongContainer: {
       position: 'absolute',
@@ -503,14 +491,14 @@ export default function SwipeScreen() {
       alignItems: 'center',
     },
     nextSongIcon: {
-      width: 40,
-      height: 40,
+      width: 60,
+      height: 60,
       borderRadius: 8,
       backgroundColor: colorScheme === 'dark' ? '#3a4551' : '#e5e7eb',
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 12,
-      overflow: 'hidden',
+      resizeMode: 'cover',
     },
     nextSongInfo: {
       flex: 1,
@@ -632,7 +620,7 @@ export default function SwipeScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <IconSymbol name="chevron.left" size={24} color={colorScheme === 'dark' ? 'white' : '#1f2937'} />
+            <Ionicons name="chevron-back" size={24} color={colorScheme === 'dark' ? 'white' : '#1f2937'} />
           </TouchableOpacity>
           <View style={{ width: 40 }} />
         </View>
@@ -661,13 +649,13 @@ export default function SwipeScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <IconSymbol name="chevron.left" size={20} color={colorScheme === 'dark' ? 'white' : '#1f2937'} />
+          <Ionicons name="chevron-back" size={20} color={colorScheme === 'dark' ? 'white' : '#1f2937'} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
           <Text style={styles.finishButtonText}>Finish</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuButton} onPress={() => setShowDropdown(true)}>
-          <IconSymbol name="ellipsis" size={20} color={colorScheme === 'dark' ? 'white' : '#1f2937'} />
+          <Ionicons name="ellipsis-horizontal" size={20} color={colorScheme === 'dark' ? 'white' : '#1f2937'} />
         </TouchableOpacity>
       </View>
       
@@ -715,7 +703,7 @@ export default function SwipeScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.playButton} disabled>
-                <IconSymbol name="play.fill" size={24} color={colorScheme === 'dark' ? '#1a2332' : 'white'} />
+                <Ionicons name="play" size={24} color={colorScheme === 'dark' ? '#1a2332' : 'white'} />
               </TouchableOpacity>
 
               <TouchableOpacity style={[styles.actionButton]} disabled>
@@ -773,11 +761,11 @@ export default function SwipeScreen() {
                   {isLoadingPreview ? (
                     <ActivityIndicator color={colorScheme === 'dark' ? '#1a2332' : 'white'} size="small" />
                   ) : !currentPreview ? (
-                    <IconSymbol name="speaker.slash" size={24} color={colorScheme === 'dark' ? '#1a2332' : 'white'} />
+                    <Ionicons name="volume-mute" size={24} color={colorScheme === 'dark' ? '#1a2332' : 'white'} />
                   ) : isPlaying ? (
-                    <IconSymbol name="pause.fill" size={24} color={colorScheme === 'dark' ? '#1a2332' : 'white'} />
+                    <Ionicons name="pause" size={24} color={colorScheme === 'dark' ? '#1a2332' : 'white'} />
                   ) : (
-                    <IconSymbol name="play.fill" size={24} color={colorScheme === 'dark' ? '#1a2332' : 'white'} />
+                    <Ionicons name="play" size={24} color={colorScheme === 'dark' ? '#1a2332' : 'white'} />
                   )}
                 </TouchableOpacity>
 
@@ -801,7 +789,7 @@ export default function SwipeScreen() {
             {nextTrack.album.images?.[0]?.url ? (
               <Image
                 source={{ uri: nextTrack.album.images[0].url }}
-                style={{ width: 40, height: 40, borderRadius: 8 }}
+                style={{ width: 60, height: 60, borderRadius: 8 }}
               />
             ) : (
               <IconSymbol name="music.note" size={20} color={colorScheme === 'dark' ? '#9ca3af' : '#6b7280'} />
@@ -816,7 +804,7 @@ export default function SwipeScreen() {
               {nextTrack.artists.map(artist => artist.name).join(', ')}
             </Text>
           </View>
-          <IconSymbol name="chevron.right" size={16} color={colorScheme === 'dark' ? '#9ca3af' : '#6b7280'} />
+          <Ionicons name="chevron-forward" size={16} color={colorScheme === 'dark' ? '#9ca3af' : '#6b7280'} />
         </View>
       )}
 

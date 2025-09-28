@@ -1,15 +1,18 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import Entypo from '@expo/vector-icons/Entypo';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function LoginScreen() {
@@ -93,12 +96,23 @@ export default function LoginScreen() {
     features: {
       marginTop: 60,
       alignItems: 'center',
+      width: '100%',
+    },
+    featureItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingHorizontal: 20,
+    },
+    featureIcon: {
+      marginRight: 12,
+      width: 24,
+      alignItems: 'center',
     },
     featureText: {
       fontSize: 16,
       color: colors.icon,
-      textAlign: 'center',
-      marginBottom: 8,
+      flex: 1,
       lineHeight: 22,
     },
   });
@@ -124,16 +138,42 @@ export default function LoginScreen() {
           <ActivityIndicator color="white" size="small" />
         ) : (
           <>
-            <View style={[styles.spotifyIcon, { backgroundColor: 'white', borderRadius: 12 }]} />
+            <View style={styles.spotifyIcon}>
+                <Entypo name="spotify" size={24} color="white" />
+              </View>
             <Text style={styles.loginButtonText}>Connect with Spotify</Text>
           </>
         )}
       </TouchableOpacity>
 
       <View style={styles.features}>
-        <Text style={styles.featureText}>• Swipe through your tracks</Text>
-        <Text style={styles.featureText}>• Preview songs before deciding</Text>
-        <Text style={styles.featureText}>• Keep what you love, toss what you don&apos;t</Text>
+        <View style={styles.featureItem}>
+          <View style={styles.featureIcon}>
+            <MaterialIcons name="swipe" size={24} color={colors.icon} />
+          </View>
+          <Text style={styles.featureText}>Swipe through your tracks</Text>
+        </View>
+        
+        <View style={styles.featureItem}>
+          <View style={styles.featureIcon}>
+            <Ionicons name="play-circle-outline" size={24} color={colors.icon} />
+          </View>
+          <Text style={styles.featureText}>Preview songs before deciding</Text>
+        </View>
+        
+        <View style={styles.featureItem}>
+          <View style={styles.featureIcon}>
+            <MaterialIcons name="favorite-outline" size={24} color={colors.icon} />
+          </View>
+          <Text style={styles.featureText}>Keep what you love, toss what you don&apos;t</Text>
+        </View>
+        
+        <View style={styles.featureItem}>
+          <View style={styles.featureIcon}>
+            <Ionicons name="flash-outline" size={24} color={colors.icon} />
+          </View>
+          <Text style={styles.featureText}>Changes sync instantly to your Spotify playlist</Text>
+        </View>
       </View>
     </View>
   );

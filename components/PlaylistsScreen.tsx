@@ -1,8 +1,8 @@
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { SpotifyPlaylist, spotifyService } from '@/services/spotify';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -149,7 +149,7 @@ export default function PlaylistsScreen() {
                 colors={['#1DB954', '#1ed760']}
                 style={styles.playlistImagePlaceholder}
               >
-                <IconSymbol name="music.note" size={32} color="white" />
+                <Ionicons name="musical-notes" size={32} color="white" />
               </LinearGradient>
             )}
           </View>
@@ -163,7 +163,7 @@ export default function PlaylistsScreen() {
               {item.name}
             </Text>
             <View style={styles.playButton}>
-              <IconSymbol name="play.fill" size={16} color={colors.tint} />
+              <Ionicons name="play" size={16} color={colors.tint} />
             </View>
           </View>
           
@@ -180,7 +180,7 @@ export default function PlaylistsScreen() {
           {/* Bottom Info Row */}
           <View style={styles.bottomInfo}>
             <View style={styles.infoChip}>
-              <IconSymbol name="music.note.list" size={12} color={colors.icon} />
+              <Ionicons name="list" size={12} color={colors.icon} />
               <Text style={[styles.infoChipText, { color: colors.icon }]}>
                 {item.tracks.total} songs
               </Text>
@@ -470,7 +470,7 @@ export default function PlaylistsScreen() {
                 <Image source={{ uri: user.images[0].url }} style={styles.userImage} />
               ) : (
                 <View style={[styles.userImagePlaceholder, { backgroundColor: colors.tint }]}>
-                  <IconSymbol name="person.fill" size={20} color="white" />
+                  <Ionicons name="person" size={20} color="white" />
                 </View>
               )}
             </TouchableOpacity>
@@ -481,7 +481,7 @@ export default function PlaylistsScreen() {
             backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
             borderColor: colors.border 
           }]}>
-            <IconSymbol name="magnifyingglass" size={20} color={colors.icon} />
+            <Ionicons name="search" size={20} color={colors.icon} />
             <TextInput
               style={[styles.searchInput, { color: colors.text }]}
               placeholder="Search your playlists..."
@@ -491,7 +491,7 @@ export default function PlaylistsScreen() {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <IconSymbol name="xmark.circle.fill" size={20} color={colors.icon} />
+                <Ionicons name="close-circle" size={20} color={colors.icon} />
               </TouchableOpacity>
             )}
           </View>
@@ -505,7 +505,7 @@ export default function PlaylistsScreen() {
               colors={['#1DB954', '#1ed760']}
               style={styles.emptyIconContainer}
             >
-              <IconSymbol name="music.note.list" size={48} color="white" />
+              <Ionicons name="list" size={48} color="white" />
             </LinearGradient>
             <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
               {searchQuery ? 'No Results Found' : 'No Playlists Yet'}
