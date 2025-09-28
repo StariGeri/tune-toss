@@ -2,50 +2,21 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-
-const PREVIEW_PROVIDER_KEY = 'preview_provider';
 
 export default function SettingsScreen() {
   const { user, logout } = useAuth();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-
-  const [previewProvider, setPreviewProvider] = useState<'apple' | 'deezer'>('apple');
-
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    try {
-      const provider = await AsyncStorage.getItem(PREVIEW_PROVIDER_KEY);
-      if (provider === 'deezer') {
-        setPreviewProvider('deezer');
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
-  };
-
-  const savePreviewProvider = async (provider: 'apple' | 'deezer') => {
-    try {
-      await AsyncStorage.setItem(PREVIEW_PROVIDER_KEY, provider);
-      setPreviewProvider(provider);
-    } catch (error) {
-      console.error('Error saving preview provider:', error);
-    }
-  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -69,7 +40,7 @@ export default function SettingsScreen() {
   const showPrivacyInfo = () => {
     Alert.alert(
       'Privacy & Data',
-      'TuneToss only accesses your Spotify playlists and basic profile information. We use third-party APIs (Apple Music, Deezer) to provide audio previews.\n\nNo personal data is stored on our servers. All playlist modifications are made directly through Spotify\'s API.',
+      'TuneToss only accesses your Spotify playlists and basic profile information. We use third-party APIs (Apple Music, Deezer) to automatically provide audio previews.\n\nNo personal data is stored on our servers. All playlist modifications are made directly through Spotify\'s API.',
       [{ text: 'OK' }]
     );
   };
@@ -177,37 +148,6 @@ export default function SettingsScreen() {
       fontSize: 16,
       color: colors.icon,
     },
-    providerOption: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      backgroundColor: colors.card,
-      borderRadius: 12,
-      marginBottom: 8,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    providerSelected: {
-      borderColor: colors.tint,
-      backgroundColor: colors.tint + '10',
-    },
-    providerIcon: {
-      marginRight: 12,
-    },
-    providerInfo: {
-      flex: 1,
-    },
-    providerName: {
-      fontSize: 16,
-      fontWeight: '500',
-      color: colors.text,
-    },
-    providerDescription: {
-      fontSize: 14,
-      color: colors.icon,
-      marginTop: 2,
-    },
     logoutButton: {
       backgroundColor: '#FF4444',
       paddingVertical: 16,
@@ -248,52 +188,6 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Audio Preview Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Audio Preview</Text>
-          
-          <TouchableOpacity
-            style={[
-              styles.providerOption,
-              previewProvider === 'apple' && styles.providerSelected,
-            ]}
-            onPress={() => savePreviewProvider('apple')}
-          >
-            <View style={styles.providerIcon}>
-              <IconSymbol name="music.note" size={24} color={colors.text} />
-            </View>
-            <View style={styles.providerInfo}>
-              <Text style={styles.providerName}>Apple Music</Text>
-              <Text style={styles.providerDescription}>
-                High-quality previews from iTunes Store
-              </Text>
-            </View>
-            {previewProvider === 'apple' && (
-              <IconSymbol name="checkmark.circle.fill" size={24} color={colors.tint} />
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.providerOption,
-              previewProvider === 'deezer' && styles.providerSelected,
-            ]}
-            onPress={() => savePreviewProvider('deezer')}
-          >
-            <View style={styles.providerIcon}>
-              <IconSymbol name="waveform" size={24} color={colors.text} />
-            </View>
-            <View style={styles.providerInfo}>
-              <Text style={styles.providerName}>Deezer</Text>
-              <Text style={styles.providerDescription}>
-                Alternative preview source with good coverage
-              </Text>
-            </View>
-            {previewProvider === 'deezer' && (
-              <IconSymbol name="checkmark.circle.fill" size={24} color={colors.tint} />
-            )}
-          </TouchableOpacity>
-        </View>
 
         {/* App Information */}
         <View style={styles.section}>

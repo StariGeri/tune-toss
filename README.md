@@ -11,7 +11,7 @@ A mobile app that allows users to clean and curate their Spotify playlists with 
 - **Playlist Management**: Remove tracks directly from your Spotify playlists
 
 ### Intuitive Interface
-- **Tinder-style Swiping**: Swipe right to keep, left to remove tracks
+- **Swiping**: Swipe right to keep, left to remove tracks
 - **Card-based Design**: Beautiful track cards with album artwork
 - **Progress Tracking**: See how many tracks you've reviewed
 - **Spotify-inspired Theme**: Dark/light mode with Spotify's signature green
@@ -19,11 +19,10 @@ A mobile app that allows users to clean and curate their Spotify playlists with 
 ### Audio Previews
 - **Multiple Sources**: Apple Music and Deezer API integration
 - **30-second Previews**: Listen before you decide
-- **Fallback System**: Automatic switching between preview providers
+- **Automatic Provider Selection System**: Automatic switching between preview providers
 - **In-app Playback**: Play/pause controls with smooth audio handling
 
 ### Settings & Customization
-- **Preview Provider**: Choose between Apple Music or Deezer
 - **Account Management**: View profile and logout functionality
 - **Privacy Information**: Transparent about data usage
 

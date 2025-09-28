@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 
 export interface AudioPreview {
   url: string;
@@ -16,18 +16,15 @@ export interface TrackSearchResult {
 }
 
 class AudioPreviewService {
-  private sound: Audio.Sound | null = null;
+  private player: any = null; // AudioPlayer from expo-audio
   private isPlaying = false;
 
   // Initialize audio session
   async initialize() {
     try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        staysActiveInBackground: false,
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
+      await setAudioModeAsync({
+        allowsRecording: false,
+        playsInSilentMode: true,
       });
     } catch (error) {
       console.error('Error initializing audio:', error);
@@ -90,8 +87,7 @@ class AudioPreviewService {
   async getPreview(
     trackName: string,
     artistName: string,
-    spotifyPreviewUrl?: string | null,
-    preferredProvider: 'apple' | 'deezer' = 'apple'
+    spotifyPreviewUrl?: string | null
   ): Promise<AudioPreview | null> {
     try {
       // First, try Spotify's own preview if available
@@ -103,26 +99,21 @@ class AudioPreviewService {
         };
       }
 
-      // Try preferred provider first
+      // Try Apple Music first, then fall back to Deezer
       let result: TrackSearchResult | null = null;
+      let provider: 'apple' | 'deezer' = 'apple';
       
-      if (preferredProvider === 'apple') {
-        result = await this.searchAppleMusic(trackName, artistName);
-        if (!result || !result.previewUrl) {
-          result = await this.searchDeezer(trackName, artistName);
-        }
-      } else {
+      result = await this.searchAppleMusic(trackName, artistName);
+      if (!result || !result.previewUrl) {
         result = await this.searchDeezer(trackName, artistName);
-        if (!result || !result.previewUrl) {
-          result = await this.searchAppleMusic(trackName, artistName);
-        }
+        provider = 'deezer';
       }
 
       if (result && result.previewUrl) {
         return {
           url: result.previewUrl,
           duration: result.duration || 30000,
-          provider: preferredProvider,
+          provider: provider,
         };
       }
 
@@ -139,20 +130,12 @@ class AudioPreviewService {
       // Stop current sound if playing
       await this.stopPreview();
 
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: previewUrl },
-        { shouldPlay: true, isLooping: false }
-      );
-
-      this.sound = sound;
+      // Create new audio player with the URL
+      this.player = createAudioPlayer({ uri: previewUrl });
+      
+      // Play the audio
+      this.player.play();
       this.isPlaying = true;
-
-      // Set up playback status update
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          this.isPlaying = false;
-        }
-      });
 
       return true;
     } catch (error) {
@@ -164,8 +147,8 @@ class AudioPreviewService {
   // Pause audio preview
   async pausePreview(): Promise<boolean> {
     try {
-      if (this.sound && this.isPlaying) {
-        await this.sound.pauseAsync();
+      if (this.player && this.isPlaying) {
+        this.player.pause();
         this.isPlaying = false;
         return true;
       }
@@ -179,8 +162,8 @@ class AudioPreviewService {
   // Resume audio preview
   async resumePreview(): Promise<boolean> {
     try {
-      if (this.sound && !this.isPlaying) {
-        await this.sound.playAsync();
+      if (this.player && !this.isPlaying) {
+        this.player.play();
         this.isPlaying = true;
         return true;
       }
@@ -194,9 +177,10 @@ class AudioPreviewService {
   // Stop audio preview
   async stopPreview(): Promise<void> {
     try {
-      if (this.sound) {
-        await this.sound.unloadAsync();
-        this.sound = null;
+      if (this.player) {
+        this.player.pause();
+        this.player.release();
+        this.player = null;
         this.isPlaying = false;
       }
     } catch (error) {
@@ -208,7 +192,7 @@ class AudioPreviewService {
   getPlaybackStatus(): { isPlaying: boolean; hasSound: boolean } {
     return {
       isPlaying: this.isPlaying,
-      hasSound: !!this.sound,
+      hasSound: !!this.player,
     };
   }
 
