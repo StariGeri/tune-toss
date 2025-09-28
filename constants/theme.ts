@@ -5,25 +5,31 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const spotifyGreen = '#1DB954';
+const spotifyBlack = '#191414';
+const spotifyWhite = '#FFFFFF';
+const spotifyGray = '#535353';
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    text: spotifyBlack,
+    background: spotifyWhite,
+    tint: spotifyGreen,
+    icon: spotifyGray,
+    tabIconDefault: spotifyGray,
+    tabIconSelected: spotifyGreen,
+    card: spotifyWhite,
+    border: '#E5E5E5',
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    text: spotifyWhite,
+    background: spotifyBlack,
+    tint: spotifyGreen,
+    icon: spotifyGray,
+    tabIconDefault: spotifyGray,
+    tabIconSelected: spotifyGreen,
+    card: '#282828',
+    border: '#404040',
   },
 };
 

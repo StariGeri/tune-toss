@@ -6,6 +6,11 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "tunetoss",
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    },
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
