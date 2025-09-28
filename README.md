@@ -1,4 +1,4 @@
-# TuneToss 🎵
+# TuneToss
 
 A mobile app that allows users to clean and curate their Spotify playlists with a fun, intuitive swipe interface inspired by dating apps. Each track in a selected playlist is presented to the user with a 30-second preview, letting them swipe right to keep, left to remove.
 

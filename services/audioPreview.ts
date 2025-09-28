@@ -18,6 +18,9 @@ export interface TrackSearchResult {
 class AudioPreviewService {
   private player: any = null; // AudioPlayer from expo-audio
   private isPlaying = false;
+  private currentPosition = 0;
+  private duration = 0;
+  private positionUpdateInterval: ReturnType<typeof setInterval> | null = null;
 
   // Initialize audio session
   async initialize() {
@@ -125,7 +128,7 @@ class AudioPreviewService {
   }
 
   // Load and play audio preview
-  async playPreview(previewUrl: string): Promise<boolean> {
+  async playPreview(previewUrl: string, previewDuration?: number): Promise<boolean> {
     try {
       // Stop current sound if playing
       await this.stopPreview();
@@ -133,9 +136,16 @@ class AudioPreviewService {
       // Create new audio player with the URL
       this.player = createAudioPlayer({ uri: previewUrl });
       
+      // Set duration
+      this.duration = previewDuration || 30000; // Default to 30 seconds
+      this.currentPosition = 0;
+      
       // Play the audio
       this.player.play();
       this.isPlaying = true;
+
+      // Start position tracking
+      this.startPositionTracking();
 
       return true;
     } catch (error) {
@@ -150,6 +160,7 @@ class AudioPreviewService {
       if (this.player && this.isPlaying) {
         this.player.pause();
         this.isPlaying = false;
+        this.stopPositionTracking();
         return true;
       }
       return false;
@@ -165,6 +176,7 @@ class AudioPreviewService {
       if (this.player && !this.isPlaying) {
         this.player.play();
         this.isPlaying = true;
+        this.startPositionTracking();
         return true;
       }
       return false;
@@ -177,11 +189,13 @@ class AudioPreviewService {
   // Stop audio preview
   async stopPreview(): Promise<void> {
     try {
+      this.stopPositionTracking();
       if (this.player) {
         this.player.pause();
         this.player.release();
         this.player = null;
         this.isPlaying = false;
+        this.currentPosition = 0;
       }
     } catch (error) {
       console.error('Error stopping preview:', error);
@@ -189,11 +203,34 @@ class AudioPreviewService {
   }
 
   // Get current playback status
-  getPlaybackStatus(): { isPlaying: boolean; hasSound: boolean } {
+  getPlaybackStatus(): { isPlaying: boolean; hasSound: boolean; position: number; duration: number } {
     return {
       isPlaying: this.isPlaying,
       hasSound: !!this.player,
+      position: this.currentPosition,
+      duration: this.duration,
     };
+  }
+
+  // Start position tracking
+  private startPositionTracking(): void {
+    this.stopPositionTracking();
+    this.positionUpdateInterval = setInterval(() => {
+      if (this.isPlaying) {
+        this.currentPosition = Math.min(this.currentPosition + 100, this.duration);
+        if (this.currentPosition >= this.duration) {
+          this.stopPreview();
+        }
+      }
+    }, 100);
+  }
+
+  // Stop position tracking
+  private stopPositionTracking(): void {
+    if (this.positionUpdateInterval) {
+      clearInterval(this.positionUpdateInterval);
+      this.positionUpdateInterval = null;
+    }
   }
 
   // Clean up resources

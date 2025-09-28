@@ -3,30 +3,34 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AudioPreview, audioPreviewService } from '@/services/audioPreview';
 import { PlaylistTrack, spotifyService } from '@/services/spotify';
+import Entypo from '@expo/vector-icons/Entypo';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  Linking,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-    runOnJS,
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
-    withTiming,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const CARD_WIDTH = screenWidth * 0.9;
-const CARD_HEIGHT = screenHeight * 0.7;
+const CARD_WIDTH = screenWidth - 32; // Full width minus margins
+const CARD_HEIGHT = screenHeight * 0.55;
 const SWIPE_THRESHOLD = screenWidth * 0.25;
 
 export default function SwipeScreen() {
@@ -45,6 +49,9 @@ export default function SwipeScreen() {
   const [currentPreview, setCurrentPreview] = useState<AudioPreview | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [playbackPosition, setPlaybackPosition] = useState(0);
+  const [playbackDuration, setPlaybackDuration] = useState(0);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   // Animation values
   const translateX = useSharedValue(0);
@@ -84,9 +91,11 @@ export default function SwipeScreen() {
       // Autoplay the preview if available
       if (preview) {
         try {
-          const success = await audioPreviewService.playPreview(preview.url);
+          const success = await audioPreviewService.playPreview(preview.url, preview.duration);
           if (success) {
             setIsPlaying(true);
+            setPlaybackDuration(preview.duration);
+            setPlaybackPosition(0);
           }
         } catch (playError) {
           console.error('Error auto-playing preview:', playError);
@@ -107,6 +116,17 @@ export default function SwipeScreen() {
     };
   }, [loadTracks]);
 
+  // Update playback position
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const status = audioPreviewService.getPlaybackStatus();
+      setPlaybackPosition(status.position);
+      setIsPlaying(status.isPlaying);
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     if (tracks.length > 0 && currentIndex < tracks.length) {
       loadPreview();
@@ -121,7 +141,7 @@ export default function SwipeScreen() {
         await audioPreviewService.pausePreview();
         setIsPlaying(false);
       } else {
-        const success = await audioPreviewService.playPreview(currentPreview.url);
+        const success = await audioPreviewService.playPreview(currentPreview.url, currentPreview.duration);
         if (success) {
           setIsPlaying(true);
         }
@@ -137,10 +157,10 @@ export default function SwipeScreen() {
     const track = tracks[currentIndex].track;
 
     if (direction === 'right') {
-      // Remove track (swipe right-to-left = remove)
+      // Remove track (swipe right = remove)
       setTracksToRemove(prev => [...prev, track.uri]);
     }
-    // If left, keep track (swipe left-to-right = keep)
+    // If left, keep track (swipe left = keep)
 
     // Move to next track
     setCurrentIndex(prev => prev + 1);
@@ -232,183 +252,225 @@ export default function SwipeScreen() {
   };
 
   const currentTrack = tracks[currentIndex]?.track;
-  const progress = tracks.length > 0 ? ((currentIndex + 1) / tracks.length) * 100 : 0;
+  const nextTrack = tracks[currentIndex + 1]?.track;
   const isFinished = currentIndex >= tracks.length;
+
+  // Calculate progress percentage for timeline
+  const progressPercentage = playbackDuration > 0 ? (playbackPosition / playbackDuration) * 100 : 0;
+
+  const openSpotifyTrack = () => {
+    if (currentTrack) {
+      const spotifyUrl = `spotify:track:${currentTrack.id}`;
+      const webUrl = `https://open.spotify.com/track/${currentTrack.id}`;
+      
+      Linking.canOpenURL(spotifyUrl).then(supported => {
+        if (supported) {
+          Linking.openURL(spotifyUrl);
+        } else {
+          Linking.openURL(webUrl);
+        }
+      });
+    }
+    setShowDropdown(false);
+  };
+
+  const openSpotifyPlaylist = () => {
+    const spotifyUrl = `spotify:playlist:${playlistId}`;
+    const webUrl = `https://open.spotify.com/playlist/${playlistId}`;
+    
+    Linking.canOpenURL(spotifyUrl).then(supported => {
+      if (supported) {
+        Linking.openURL(spotifyUrl);
+      } else {
+        Linking.openURL(webUrl);
+      }
+    });
+    setShowDropdown(false);
+  };
 
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.background,
+      backgroundColor: colorScheme === 'dark' ? '#1a2332' : '#f8fafc',
     },
     header: {
       paddingTop: 60,
       paddingHorizontal: 24,
       paddingBottom: 16,
-    },
-    headerTop: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 20,
     },
     backButton: {
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: colors.card,
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
       justifyContent: 'center',
       alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
     },
-    playlistTitle: {
-      fontSize: 20,
-      fontWeight: '700',
-      color: colors.text,
-      flex: 1,
-      textAlign: 'center',
-      marginHorizontal: 16,
-    },
-    finishButton: {
-      backgroundColor: colors.tint,
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-      borderRadius: 25,
-      shadowColor: colors.tint,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    finishButtonText: {
-      color: 'white',
-      fontWeight: '700',
-      fontSize: 16,
+    menuButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     progressContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
       paddingHorizontal: 24,
-      marginBottom: 8,
-    },
-    progressBar: {
-      flex: 1,
-      height: 6,
-      backgroundColor: colors.border,
-      borderRadius: 3,
-      marginRight: 16,
-      overflow: 'hidden',
-    },
-    progressFill: {
-      height: '100%',
-      backgroundColor: colors.tint,
-      borderRadius: 3,
+      marginBottom: 20,
     },
     progressText: {
       fontSize: 16,
-      color: colors.text,
+      color: colorScheme === 'dark' ? 'white' : '#1f2937',
       fontWeight: '600',
+      textAlign: 'center',
+      marginBottom: 8,
     },
     cardContainer: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: 20,
-      paddingVertical: 40,
+      paddingHorizontal: 16,
+      paddingBottom: 140, // Space for next song section
     },
     card: {
       width: CARD_WIDTH,
       height: CARD_HEIGHT,
-      backgroundColor: colors.card,
+      backgroundColor: colorScheme === 'dark' ? '#2a3441' : 'white',
       borderRadius: 24,
-      padding: 32,
+      padding: 24,
       alignItems: 'center',
       justifyContent: 'space-between',
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.15,
+      shadowOpacity: colorScheme === 'dark' ? 0.3 : 0.1,
       shadowRadius: 16,
       elevation: 12,
     },
     albumArt: {
-      width: 240,
-      height: 240,
-      borderRadius: 20,
+      width: 200,
+      height: 200,
+      borderRadius: 16,
     },
     albumArtPlaceholder: {
-      width: 240,
-      height: 240,
-      borderRadius: 20,
-      backgroundColor: colors.border,
+      width: 200,
+      height: 200,
+      borderRadius: 16,
+      backgroundColor: colorScheme === 'dark' ? '#3a4551' : '#e5e7eb',
       justifyContent: 'center',
       alignItems: 'center',
     },
     trackInfo: {
       alignItems: 'center',
       paddingHorizontal: 16,
+      marginTop: 20,
     },
     trackName: {
-      fontSize: 26,
+      fontSize: 24,
       fontWeight: '800',
-      color: colors.text,
+      color: colorScheme === 'dark' ? 'white' : '#1f2937',
       textAlign: 'center',
       marginBottom: 8,
-      lineHeight: 32,
+      lineHeight: 30,
     },
     artistName: {
-      fontSize: 20,
-      color: colors.icon,
+      fontSize: 18,
+      color: colorScheme === 'dark' ? '#9ca3af' : '#6b7280',
       textAlign: 'center',
       marginBottom: 6,
       fontWeight: '600',
     },
-    albumName: {
-      fontSize: 16,
-      color: colors.icon,
-      textAlign: 'center',
-      fontWeight: '500',
-      opacity: 0.8,
+    timelineContainer: {
+      width: '100%',
+      marginTop: 20,
+      marginBottom: 20,
+    },
+    timeline: {
+      height: 4,
+      backgroundColor: colorScheme === 'dark' ? '#3a4551' : '#e5e7eb',
+      borderRadius: 2,
+      overflow: 'hidden',
+    },
+    timelineProgress: {
+      height: '100%',
+      backgroundColor: colorScheme === 'dark' ? 'white' : '#1f2937',
+      borderRadius: 2,
+    },
+    controlsContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 20,
     },
     playButton: {
-      width: 72,
-      height: 72,
-      borderRadius: 36,
-      backgroundColor: colors.tint,
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: colorScheme === 'dark' ? 'white' : '#1f2937',
       justifyContent: 'center',
       alignItems: 'center',
-      shadowColor: colors.tint,
+      shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 8,
       elevation: 6,
     },
-    actionButtons: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      width: '100%',
-      paddingHorizontal: 40,
-    },
     actionButton: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: '#ef4444',
       justifyContent: 'center',
       alignItems: 'center',
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
-      shadowRadius: 8,
-      elevation: 6,
-    },
-    removeButton: {
-      backgroundColor: '#FF6B6B',
+      shadowRadius: 4,
+      elevation: 4,
     },
     keepButton: {
-      backgroundColor: '#51CF66',
+      backgroundColor: '#22c55e',
+    },
+    nextSongContainer: {
+      position: 'absolute',
+      bottom: 40,
+      left: 16,
+      right: 16,
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      borderRadius: 16,
+      padding: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    nextSongIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 8,
+      backgroundColor: colorScheme === 'dark' ? '#3a4551' : '#e5e7eb',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 12,
+      overflow: 'hidden',
+    },
+    nextSongInfo: {
+      flex: 1,
+    },
+    nextSongLabel: {
+      color: colorScheme === 'dark' ? '#9ca3af' : '#6b7280',
+      fontSize: 12,
+      fontWeight: '600',
+      marginBottom: 4,
+    },
+    nextSongTitle: {
+      color: colorScheme === 'dark' ? 'white' : '#1f2937',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    nextSongArtist: {
+      color: colorScheme === 'dark' ? '#9ca3af' : '#6b7280',
+      fontSize: 12,
     },
     finishedContainer: {
       flex: 1,
@@ -419,27 +481,89 @@ export default function SwipeScreen() {
     finishedTitle: {
       fontSize: 28,
       fontWeight: 'bold',
-      color: colors.text,
+      color: colorScheme === 'dark' ? 'white' : '#1f2937',
       marginBottom: 16,
       textAlign: 'center',
     },
     finishedSubtitle: {
       fontSize: 18,
-      color: colors.icon,
+      color: colorScheme === 'dark' ? '#9ca3af' : '#6b7280',
       textAlign: 'center',
       marginBottom: 32,
+    },
+    finishButton: {
+      backgroundColor: colors.tint,
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 20,
+      shadowColor: colors.tint,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    finishButtonText: {
+      color: 'white',
+      fontWeight: '700',
+      fontSize: 14,
     },
     loadingContainer: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+      backgroundColor: colorScheme === 'dark' ? '#1a2332' : '#f8fafc',
+    },
+    // Dropdown styles
+    dropdownOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-start',
+      alignItems: 'flex-end',
+      paddingTop: 60,
+      paddingRight: 24,
+    },
+    dropdownMenu: {
+      backgroundColor: colorScheme === 'dark' ? '#2a3441' : 'white',
+      borderRadius: 12,
+      padding: 8,
+      minWidth: 200,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    dropdownItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 8,
+      marginVertical: 2,
+    },
+    dropdownItemPressed: {
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+    },
+    spotifyIcon: {
+      width: 20,
+      height: 20,
+      marginRight: 12,
+      backgroundColor: '#1DB954',
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    dropdownText: {
+      color: colorScheme === 'dark' ? 'white' : '#1f2937',
+      fontSize: 16,
+      fontWeight: '500',
     },
   });
 
   if (isLoading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.tint} />
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colorScheme === 'dark' ? 'white' : '#1f2937'} />
         <Text style={[styles.progressText, { marginTop: 16 }]}>Loading tracks...</Text>
       </View>
     );
@@ -449,13 +573,10 @@ export default function SwipeScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-              <IconSymbol name="chevron.left" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <Text style={styles.playlistTitle}>{playlistName}</Text>
-            <View style={{ width: 40 }} />
-          </View>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <IconSymbol name="chevron.left" size={24} color={colorScheme === 'dark' ? 'white' : '#1f2937'} />
+          </TouchableOpacity>
+          <View style={{ width: 40 }} />
         </View>
         
         <View style={styles.finishedContainer}>
@@ -480,26 +601,23 @@ export default function SwipeScreen() {
 
   return (
     <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-              <IconSymbol name="chevron.left" size={20} color={colors.text} />
-            </TouchableOpacity>
-            <Text style={styles.playlistTitle} numberOfLines={1}>{playlistName}</Text>
-            <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
-              <Text style={styles.finishButtonText}>Finish</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${progress}%` }]} />
-          </View>
-          <Text style={styles.progressText}>
-            {currentIndex + 1} of {tracks.length}
-          </Text>
-        </View>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <IconSymbol name="chevron.left" size={20} color={colorScheme === 'dark' ? 'white' : '#1f2937'} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
+          <Text style={styles.finishButtonText}>Finish</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.menuButton} onPress={() => setShowDropdown(true)}>
+          <IconSymbol name="ellipsis" size={20} color={colorScheme === 'dark' ? 'white' : '#1f2937'} />
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.progressContainer}>
+        <Text style={styles.progressText}>
+          {currentIndex + 1} of {tracks.length}
+        </Text>
+      </View>
 
       <View style={styles.cardContainer}>
         {currentTrack && (
@@ -513,7 +631,7 @@ export default function SwipeScreen() {
                   />
                 ) : (
                   <View style={styles.albumArtPlaceholder}>
-                    <IconSymbol name="music.note" size={48} color={colors.icon} />
+                    <IconSymbol name="music.note" size={48} color="#9ca3af" />
                   </View>
                 )}
               </View>
@@ -525,46 +643,111 @@ export default function SwipeScreen() {
                 <Text style={styles.artistName} numberOfLines={1}>
                   {currentTrack.artists.map(artist => artist.name).join(', ')}
                 </Text>
-                <Text style={styles.albumName} numberOfLines={1}>
-                  {currentTrack.album.name}
-                </Text>
               </View>
 
-              <TouchableOpacity
-                style={styles.playButton}
-                onPress={playPause}
-                disabled={!currentPreview || isLoadingPreview}
-              >
-                {isLoadingPreview ? (
-                  <ActivityIndicator color="white" size="small" />
-                ) : !currentPreview ? (
-                  <IconSymbol name="speaker.slash" size={24} color="white" />
-                ) : isPlaying ? (
-                  <IconSymbol name="pause.fill" size={24} color="white" />
-                ) : (
-                  <IconSymbol name="play.fill" size={24} color="white" />
-                )}
-              </TouchableOpacity>
+              <View style={styles.timelineContainer}>
+                <View style={styles.timeline}>
+                  <View style={[styles.timelineProgress, { width: `${progressPercentage}%` }]} />
+                </View>
+              </View>
 
-              <View style={styles.actionButtons}>
+              <View style={styles.controlsContainer}>
                 <TouchableOpacity
-                  style={[styles.actionButton, styles.keepButton]}
+                  style={styles.actionButton}
                   onPress={() => handleSwipe('left')}
                 >
-                  <IconSymbol name="heart.fill" size={28} color="white" />
+                  <IconSymbol name="xmark" size={20} color="white" />
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity
-                  style={[styles.actionButton, styles.removeButton]}
+                  style={styles.playButton}
+                  onPress={playPause}
+                  disabled={!currentPreview || isLoadingPreview}
+                >
+                  {isLoadingPreview ? (
+                    <ActivityIndicator color={colorScheme === 'dark' ? '#1a2332' : 'white'} size="small" />
+                  ) : !currentPreview ? (
+                    <IconSymbol name="speaker.slash" size={24} color={colorScheme === 'dark' ? '#1a2332' : 'white'} />
+                  ) : isPlaying ? (
+                    <IconSymbol name="pause.fill" size={24} color={colorScheme === 'dark' ? '#1a2332' : 'white'} />
+                  ) : (
+                    <IconSymbol name="play.fill" size={24} color={colorScheme === 'dark' ? '#1a2332' : 'white'} />
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.keepButton]}
                   onPress={() => handleSwipe('right')}
                 >
-                  <IconSymbol name="xmark" size={28} color="white" />
+                  <IconSymbol name="heart.fill" size={20} color="white" />
                 </TouchableOpacity>
               </View>
             </Animated.View>
           </GestureDetector>
         )}
       </View>
+
+
+      {/* Next song preview */}
+      {nextTrack && (
+        <View style={styles.nextSongContainer}>
+          <View style={styles.nextSongIcon}>
+            {nextTrack.album.images?.[0]?.url ? (
+              <Image
+                source={{ uri: nextTrack.album.images[0].url }}
+                style={{ width: 40, height: 40, borderRadius: 8 }}
+              />
+            ) : (
+              <IconSymbol name="music.note" size={20} color={colorScheme === 'dark' ? '#9ca3af' : '#6b7280'} />
+            )}
+          </View>
+          <View style={styles.nextSongInfo}>
+            <Text style={styles.nextSongLabel}>Next from: {playlistName}</Text>
+            <Text style={styles.nextSongTitle} numberOfLines={1}>
+              {nextTrack.name}
+            </Text>
+            <Text style={styles.nextSongArtist} numberOfLines={1}>
+              {nextTrack.artists.map(artist => artist.name).join(', ')}
+            </Text>
+          </View>
+          <IconSymbol name="chevron.right" size={16} color={colorScheme === 'dark' ? '#9ca3af' : '#6b7280'} />
+        </View>
+      )}
+
+      {/* Dropdown Modal */}
+      <Modal
+        visible={showDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowDropdown(false)}
+      >
+        <TouchableOpacity 
+          style={styles.dropdownOverlay}
+          activeOpacity={1}
+          onPress={() => setShowDropdown(false)}
+        >
+          <View style={styles.dropdownMenu}>
+            <TouchableOpacity 
+              style={[styles.dropdownItem, styles.dropdownItemPressed]}
+              onPress={openSpotifyTrack}  
+            >
+              <View style={styles.spotifyIcon}>
+                <Entypo name="spotify" size={16} color="white" />
+              </View>
+              <Text style={styles.dropdownText}>Open song</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.dropdownItem, styles.dropdownItemPressed]}
+              onPress={openSpotifyPlaylist}
+            >
+              <View style={styles.spotifyIcon}>
+                <Entypo name="spotify" size={16} color="white" />
+              </View>
+              <Text style={styles.dropdownText}>Open playlist</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
