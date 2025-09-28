@@ -8,15 +8,18 @@ import { Platform } from 'react-native';
 const spotifyGreen = '#1DB954';
 const spotifyBlack = '#191414';
 const spotifyWhite = '#FFFFFF';
-const spotifyGray = '#535353';
+const spotifyGrayDark = '#F5F5F0';
+
+const spotifyGrayLight = '#535353';
+
 
 export const Colors = {
   light: {
     text: spotifyBlack,
     background: spotifyWhite,
     tint: spotifyGreen,
-    icon: spotifyGray,
-    tabIconDefault: spotifyGray,
+    icon: spotifyGrayLight,
+    tabIconDefault: spotifyGrayLight,
     tabIconSelected: spotifyGreen,
     card: spotifyWhite,
     border: '#E5E5E5',
@@ -25,8 +28,8 @@ export const Colors = {
     text: '#E5E7EB', // Softer white for better readability
     background: spotifyBlack,
     tint: spotifyGreen,
-    icon: spotifyGray,
-    tabIconDefault: spotifyGray,
+    icon: spotifyGrayDark,
+    tabIconDefault: spotifyGrayDark,
     tabIconSelected: spotifyGreen,
     card: '#282828',
     border: '#404040',

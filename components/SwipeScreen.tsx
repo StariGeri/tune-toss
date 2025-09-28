@@ -54,11 +54,16 @@ export default function SwipeScreen() {
   const [playbackDuration, setPlaybackDuration] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
 
-  // Animation values
+  // Animation values for current card
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const rotate = useSharedValue(0);
   const scale = useSharedValue(1);
+  
+  // Animation values for next card
+  const nextCardTranslateX = useSharedValue(screenWidth);
+  const nextCardScale = useSharedValue(0.9);
+  const nextCardOpacity = useSharedValue(0);
 
   const loadTracks = useCallback(async () => {
     try {
@@ -131,8 +136,15 @@ export default function SwipeScreen() {
   useEffect(() => {
     if (tracks.length > 0 && currentIndex < tracks.length) {
       loadPreview();
+      
+      // Initialize next card position
+      if (currentIndex + 1 < tracks.length) {
+        nextCardTranslateX.value = screenWidth;
+        nextCardOpacity.value = 0;
+        nextCardScale.value = 0.9;
+      }
     }
-  }, [loadPreview, currentIndex, tracks.length]);
+  }, [loadPreview, currentIndex, tracks.length, nextCardTranslateX, nextCardOpacity, nextCardScale]);
 
   const playPause = async () => {
     if (!currentPreview) return;
@@ -163,14 +175,29 @@ export default function SwipeScreen() {
     }
     // If left, keep track (swipe left = keep)
 
+    // Animate next card sliding in from the opposite direction
+    if (currentIndex + 1 < tracks.length) {
+      // If swiping right, next card comes from left (-screenWidth)
+      // If swiping left, next card comes from right (screenWidth)
+      const nextCardStartPosition = direction === 'right' ? -screenWidth : screenWidth;
+      
+      nextCardTranslateX.value = nextCardStartPosition;
+      nextCardScale.value = 0.9;
+      nextCardOpacity.value = 1;
+      
+      // Animate next card to center
+      nextCardTranslateX.value = withSpring(0, { damping: 20, stiffness: 300 });
+      nextCardScale.value = withSpring(1, { damping: 20, stiffness: 300 });
+    }
+
     // Move to next track
     setCurrentIndex(prev => prev + 1);
     
-    // Reset animations
-    translateX.value = withSpring(0);
-    translateY.value = withSpring(0);
-    rotate.value = withSpring(0);
-    scale.value = withSpring(1);
+    // Reset current card animations for the new card
+    translateX.value = 0;
+    translateY.value = 0;
+    rotate.value = 0;
+    scale.value = 1;
 
     // Stop current preview
     audioPreviewService.stopPreview();
@@ -185,6 +212,18 @@ export default function SwipeScreen() {
       translateX.value = event.translationX;
       translateY.value = event.translationY * 0.1;
       rotate.value = (event.translationX / screenWidth) * 15;
+      
+      // Show next card preview during swipe
+      if (currentIndex + 1 < tracks.length && Math.abs(event.translationX) > 50) {
+        const direction = event.translationX > 0 ? 'right' : 'left';
+        const nextCardStartPosition = direction === 'right' ? -screenWidth * 0.3 : screenWidth * 0.3;
+        
+        nextCardTranslateX.value = nextCardStartPosition;
+        nextCardOpacity.value = Math.min(Math.abs(event.translationX) / SWIPE_THRESHOLD, 0.7);
+        nextCardScale.value = 0.9 + (Math.abs(event.translationX) / SWIPE_THRESHOLD) * 0.1;
+      } else {
+        nextCardOpacity.value = 0;
+      }
     })
     .onEnd((event) => {
       scale.value = withSpring(1);
@@ -199,6 +238,9 @@ export default function SwipeScreen() {
         translateX.value = withSpring(0);
         translateY.value = withSpring(0);
         rotate.value = withSpring(0);
+        // Hide next card preview if swipe was cancelled
+        nextCardOpacity.value = withSpring(0);
+        nextCardTranslateX.value = withSpring(screenWidth);
       }
     });
 
@@ -209,6 +251,14 @@ export default function SwipeScreen() {
       { rotate: `${rotate.value}deg` },
       { scale: scale.value },
     ],
+  }));
+
+  const nextCardAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: nextCardTranslateX.value },
+      { scale: nextCardScale.value },
+    ],
+    opacity: nextCardOpacity.value,
   }));
 
   const handleFinish = async () => {
@@ -331,9 +381,10 @@ export default function SwipeScreen() {
     },
     cardContainer: {
       flex: 1,
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
       alignItems: 'center',
       paddingHorizontal: 16,
+      paddingTop: 20,
       paddingBottom: 140, // Space for next song section
     },
     card: {
@@ -341,7 +392,9 @@ export default function SwipeScreen() {
       height: CARD_HEIGHT,
       //backgroundColor: colorScheme === 'dark' ? '#2a3441' : 'white',
       borderRadius: 24,
-      padding: 24,
+      paddingTop: 24,
+      paddingHorizontal: 24,
+      paddingBottom: 24,
       alignItems: 'center',
       justifyContent: 'space-between',
       shadowColor: '#000',
@@ -349,6 +402,13 @@ export default function SwipeScreen() {
       shadowOpacity: colorScheme === 'dark' ? 0.3 : 0.1,
       shadowRadius: 16,
       elevation: 12,
+      position: 'absolute',
+    },
+    currentCard: {
+      zIndex: 2,
+    },
+    nextCard: {
+      zIndex: 1,
     },
     albumArt: {
       width: 250,
@@ -618,9 +678,57 @@ export default function SwipeScreen() {
       </View>
 
       <View style={styles.cardContainer}>
+        {/* Next card (behind current card) */}
+        {nextTrack && (
+          <Animated.View style={[styles.card, styles.nextCard, nextCardAnimatedStyle]}>
+            <View style={styles.albumArt}>
+              {nextTrack.album.images?.[0]?.url ? (
+                <Image
+                  source={{ uri: nextTrack.album.images[0].url }}
+                  style={styles.albumArt}
+                />
+              ) : (
+                <View style={styles.albumArtPlaceholder}>
+                  <IconSymbol name="music.note" size={48} color="#9ca3af" />
+                </View>
+              )}
+            </View>
+
+            <View style={styles.trackInfo}>
+              <Text style={styles.trackName} numberOfLines={2}>
+                {nextTrack.name}
+              </Text>
+              <Text style={styles.artistName} numberOfLines={1}>
+                {nextTrack.artists.map(artist => artist.name).join(', ')}
+              </Text>
+            </View>
+
+            <View style={styles.timelineContainer}>
+              <View style={styles.timeline}>
+                <View style={[styles.timelineProgress, { width: '0%' }]} />
+              </View>
+            </View>
+
+            <View style={styles.controlsContainer}>
+              <TouchableOpacity style={styles.actionButton} disabled>
+                <Ionicons name="heart-dislike-outline" size={24} color="red" />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.playButton} disabled>
+                <IconSymbol name="play.fill" size={24} color={colorScheme === 'dark' ? '#1a2332' : 'white'} />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.actionButton]} disabled>
+                <Ionicons name="heart-outline" size={24} color={colorScheme === 'dark' ? 'white' : 'black'} />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Current card (on top) */}
         {currentTrack && (
           <GestureDetector gesture={panGesture}>
-            <Animated.View style={[styles.card, animatedStyle]}>
+            <Animated.View style={[styles.card, styles.currentCard, animatedStyle]}>
               <View style={styles.albumArt}>
                 {currentTrack.album.images?.[0]?.url ? (
                   <Image
